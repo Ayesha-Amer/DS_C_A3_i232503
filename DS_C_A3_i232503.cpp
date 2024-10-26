@@ -4,36 +4,11 @@
 #include<ctime>
 using namespace std;
 
-class Player{
-        public:
-                string Player_ID;
-                string name;
-                string phoneNo;
-                string Email;
-                string Password;
-                Player *left;
-                Player *right;
-              //  Games_PLayed_Class GamesPlayed;
-                Player(string playerID, string playerName, string phone, string email,string password) {
-                        Player_ID = playerID;
-                        name = playerName;
-                        phoneNo = phone;
-                        Email = email;
-                        Password = password;
-                        left = right = nullptr;
-                }
-
-                void info(){
-                        cout <<name <<endl<<Player_ID<<endl<<phoneNo<<endl<<Email<<endl<<Password<<endl<<endl;
-                }
-
-};
-
 class Games_PLayed_Class{
         public:
                 string Game_Id;
                 float hoursPlayed;
-                int achievements_Unclocked;
+                int achievements_Unlocked;
 
 };
 
@@ -47,6 +22,39 @@ class Games{
                 int downloads;
 
 };
+
+class Player{
+        public:
+                string Player_ID;
+                string name;
+                string phoneNo;
+                string Email;
+                string Password;
+                Player *left;
+                Player *right;
+                string games;
+                Games_PLayed_Class GamesPlayed;
+
+                Player(string playerID, string playerName, string phone, string email,string password,string games) {
+                        Player_ID = playerID;
+                        name = playerName;
+                        phoneNo = phone;
+                        Email = email;
+                        Password = password;
+                        this->games = games;
+                        left = right = nullptr;
+                }
+
+                void info(){
+                        cout <<name <<endl<<Player_ID<<endl<<phoneNo<<endl<<Email<<endl<<Password<<endl<<endl;
+                }
+
+             //   void separateGameInfo(){
+
+              //  }
+
+};
+
 
 class Tree{
         private:
@@ -112,7 +120,7 @@ class Tree{
                                                         password = token;
                                                 }
                                                 else{
-                                                        data += token;
+                                                        data += token + ",";
                                                 }
                                         ++i;
                                         token = "";
@@ -125,26 +133,21 @@ class Tree{
 
                 Player* insert(Player*root , long long id){
                         if(root == nullptr){
-                                root = new Player(to_string(id),name,phno,email,password);
+                                return new Player(to_string(id),name,phno,email,password,data);
                         }
                         if(id < stoll(root->Player_ID)){
                                root->left =  insert(root->left,id);
                         }
 
-                        if(id > stoll(root->Player_ID)){
+                        else if(id > stoll(root->Player_ID)){
                                root->right =  insert(root->right,id);
                         }
 
-                        return root;
-                }
-
-                void display(Player *root){
-                        if(root == nullptr){
-                                return;
+                        else{
+                                cout << "Primary key of the object being inserted already exists.";
                         }
-                        root->info();
-                        display(root->left);
-                        display(root->right);
+
+                        return root;
                 }
 
                 void insertPlayer(){
@@ -152,6 +155,86 @@ class Tree{
                         separateData(player);
                     //    cout << name << "\t" << id << endl;
                         playerRoot = insert(playerRoot,stoll(id));         
+                }
+
+                Player* search(Player*root , long long id){
+                        if(root == nullptr){ //if reaches leaf nodes then it means the node was not present 
+                                return nullptr;}
+        
+
+                        if(id == stoll(root->Player_ID)){
+                                return root;
+                        }
+
+                        if(id < stoll(root->Player_ID)){
+                                return  search(root->left,id);
+                        }
+                        else
+                                 return  search(root->right,id);
+
+                }
+
+                void searchPLayer(string id){
+                       Player* p = search(playerRoot,stoll(id));
+                       if(p == nullptr){
+                                cout<<"\nNo player with id: "<<id<<" in the tree.";
+                                return;
+                       }
+                       p->info();
+                }
+
+                Player* findMax(Player *root){
+                        while(root->right != nullptr){
+                                root = root->right; //searching for max in left sub tree
+                        }
+                        return root;
+                }
+
+                Player* deleteNode(Player*root , long long id){
+                        if(root == nullptr){ //if reaches leaf nodes
+                                return root; 
+                        }
+
+                        //Searching the node in left and right trees.
+                        if(id < stoll(root->Player_ID)){
+                                root->left = deleteNode(root->left,id);
+                        }
+
+                        else if(id > stoll(root->Player_ID)){
+                                root->right = deleteNode(root->right,id);
+                        }
+
+                        else{
+                                if(root->left == nullptr){      //If there is no left child it will take value of right child
+                                        Player *temp = root->right;
+                                        delete root; //Delete the root and take valur of right child
+                                        return temp;
+                                }
+                                if(root->right == nullptr){      //If there is no right child it will take value of left child
+                                        Player *temp = root->left;
+                                        delete root; //Delete the root and take value of left child
+                                        return temp;
+                                }
+
+                        //If the node has 2 child then consider the predecessor deletion which is replacing it by the max id in the left tree:
+                        Player* temp = findMax(root->left);
+                        root->Player_ID = temp->Player_ID;
+                        root->left = deleteNode(root->left,stoll(temp->Player_ID)); //Callling the func again to delete the right node properly 
+                        }
+                return root;
+                }
+
+                void deletePlayer(string id){
+                       playerRoot = deleteNode(playerRoot,stoll(id));
+                }
+                
+                void display(Player *root){
+                        if(root == nullptr){
+                                return;
+                        }
+                        root->info();
+                        display(root->left);
+                        display(root->right);
                 }
 
                 void Display(){
@@ -166,17 +249,10 @@ int main(){
         obj.insertPlayer();
         obj.insertPlayer();
         obj.insertPlayer();
-        obj.insertPlayer();
-        obj.insertPlayer();
-        obj.insertPlayer();
-           obj.insertPlayer();
-        obj.insertPlayer();
-        obj.insertPlayer();
-        obj.insertPlayer();
-        obj.insertPlayer();
-        obj.insertPlayer();
-          
-        
+        obj.Display();
+        obj.searchPLayer("4038366928");
+        cout << "\nDeleting:\n";
+        obj.deletePlayer("4038366928");
         obj.Display();
         return 0;
 }
