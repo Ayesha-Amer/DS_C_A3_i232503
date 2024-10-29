@@ -1,14 +1,63 @@
-#include<iostream>
+#include <iostream>
 #include <fstream>
 #include <string>
-#include<ctime>
+#include <ctime>
 using namespace std;
 
 class Games_PLayed_Class{
-        public:
+         public:
+                Games_PLayed_Class *root = nullptr;
                 string Game_Id;
-                float hoursPlayed;
-                int achievements_Unlocked;
+                double hoursPlayed;
+                long long achievements_Unlocked;
+                Games_PLayed_Class * left;
+                Games_PLayed_Class * right;
+
+                Games_PLayed_Class(string id, double hours , int achievements){
+                        Game_Id = id;
+                        hoursPlayed = hours;
+                        achievements_Unlocked = achievements;
+                        left = right = nullptr;
+                }
+
+                Games_PLayed_Class* insertGame(Games_PLayed_Class* root , long long Id , double h , long long a  ){
+                         if(root == nullptr){
+                                return new Games_PLayed_Class(to_string(Id),h,a);
+                        }
+                        if(Id < stoll(root->Game_Id)){
+                               root->left =  insertGame(root->left,Id,h,a);
+                        }
+
+                        if(Id > stoll(root->Game_Id)){
+                               root->right =  insertGame(root->right,Id,h,a);
+                        }
+
+                        
+                        return root;
+
+                }
+
+                void insert(string Id, double hours,long long achievements){
+                        Games_PLayed_Class* newNode = new Games_PLayed_Class(Id,hours,achievements);
+                        root = insertGame(root,stoll(Id),hours,achievements);
+                }
+
+                void info(){
+                        cout << "Game_Id: "<<Game_Id << "\tHours Played: " << hoursPlayed << "\tAchievements Unloacked: " << achievements_Unlocked << endl;
+                }
+
+                void display(Games_PLayed_Class *root){
+                        if(root == nullptr){
+                                return;
+                        }
+                        root->info();
+                        display(root->left);
+                        display(root->right);
+                }
+
+                void Display(){
+                        display(root);
+                }
 
 };
 
@@ -33,8 +82,8 @@ class Player{
                 Player *left;
                 Player *right;
                 string games;
-                Games_PLayed_Class GamesPlayed;
-
+                Games_PLayed_Class *GamesPlayed = new Games_PLayed_Class("", 0.0f, 0);
+               
                 Player(string playerID, string playerName, string phone, string email,string password,string games) {
                         Player_ID = playerID;
                         name = playerName;
@@ -43,15 +92,46 @@ class Player{
                         Password = password;
                         this->games = games;
                         left = right = nullptr;
+                        separateGameInfo();
                 }
 
                 void info(){
-                        cout <<name <<endl<<Player_ID<<endl<<phoneNo<<endl<<Email<<endl<<Password<<endl<<endl;
+                        cout <<name <<endl<<Player_ID<<endl<<phoneNo<<endl<<Email<<endl<<Password<<"\nGames Played: \n";
+                        GamesPlayed->Display();
+                        cout<<endl<<endl;
                 }
 
-             //   void separateGameInfo(){
+                void separateGameInfo(){
+                        string Id;
+                        string hours;
+                        string achievements;
+                        string token = "";
+                        int i=0;
+                        while(games[i] != '\0'){
+                                token += games[i];
+                                if(games[i+1] == ','){
+                                                if(Id == "\0"){
+                                                        Id = token;
+                                                }
+                                                else if(hours == "\0"){
+                                                        hours= token;
+                                                }
+                                                else if(achievements== "\0"){
+                                                        achievements = token;
 
-              //  }
+                                                        //Makes the node when the 3 values are filled
+                                                        GamesPlayed->insert(Id,stod(hours),stoll(achievements));
+                                                        Id = hours = achievements = "";
+                                                }
+                                               
+                                
+                                        ++i; //incrementing to skip ','
+                                        token = ""; //Emptying the string after insertion
+                                }
+                                
+                                        ++i;
+                        }
+                }
 
 };
 
@@ -77,7 +157,7 @@ class Tree{
 
                 string getInfo(){
                         int randNum = rand() % 1001;
-                    //    cout << randNum << endl<<endl;
+                        cout << randNum << endl<<endl;
                         if (randNum <= 130) { // (last 2 digits of your roll number × 10 + 100)
                                 return "";
                         }
@@ -122,8 +202,8 @@ class Tree{
                                                 else{
                                                         data += token + ",";
                                                 }
-                                        ++i;
-                                        token = "";
+                                        ++i; //incrementing to skip ','
+                                        token = ""; //Emptying the string after insertion
                                 }
                                 
                                         ++i;
@@ -153,7 +233,7 @@ class Tree{
                 void insertPlayer(){
                         string player = getInfo();
                         separateData(player);
-                    //    cout << name << "\t" << id << endl;
+                        //cout << name << "\n" << data << endl << endl;
                         playerRoot = insert(playerRoot,stoll(id));         
                 }
 
@@ -247,12 +327,9 @@ int main(){
         srand(232503);
         Tree obj;
         obj.insertPlayer();
-        obj.insertPlayer();
-        obj.insertPlayer();
-        obj.Display();
-        obj.searchPLayer("4038366928");
-        cout << "\nDeleting:\n";
-        obj.deletePlayer("4038366928");
-        obj.Display();
+     //   obj.insertPlayer();
+       //] obj.insertPlayer();
+       obj.Display();
+        
         return 0;
 }
