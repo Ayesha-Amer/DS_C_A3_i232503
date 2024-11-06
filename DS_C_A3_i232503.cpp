@@ -62,15 +62,31 @@ class Games_PLayed_Class{
 };
 
 class Games{
-        public:
+         public:
                 string Game_Id;
                 string name;
                 string developer;
                 string publisher;
-                float file_size_in_GBs;
-                int downloads;
+                double file_size_in_GBs;
+                long downloads;
+                Games *left;
+                Games *right;
 
+                Games(string gameId, string gameName, string gameDeveloper, string gamePublisher, double fileSize, long gameDownloads) {
+                        Game_Id = gameId;
+                        name = gameName;
+                        developer = gameDeveloper;
+                        publisher = gamePublisher;
+                        file_size_in_GBs = fileSize;
+                        downloads = gameDownloads;
+                        right = left = nullptr;
+                }
+
+                void info(){
+                        cout << Game_Id <<"\t"<< name <<"\t"<< developer <<"\t "<<publisher <<"\t"<< file_size_in_GBs <<"\t"<< downloads <<endl;
+                }
 };
+
 
 class Player{
         public:
@@ -141,45 +157,31 @@ class Tree{
                 Player* playerRoot;
                 Games * gamesRoot;
                 //Variables to store information about the player
-                string name ;
+                string player_name ;
                 string id;
                 string phno;
                 string  email;
                 string password;
                 string data = "";
+                //Variables to store information about a game:
+                string Game_Id;
+                string game_name;
+                string developer;
+                string publisher;
+                string file_size_in_GBs;
+                string downloads;
 
         public:
                 Tree(){
                         playerRoot = nullptr;
                         gamesRoot = nullptr;
+                        make_Player_tree();
+                        make_Game_tree();
                 }
  
-
-                string getInfo(){
-                        int randNum = rand() % 1001;
-                        cout << randNum << endl<<endl;
-                        if (randNum <= 130) { // (last 2 digits of your roll number × 10 + 100)
-                                return "";
-                        }
-                        int curr = 0;
-                        string info;
-                        fstream  obj("Players.txt");
-                        while(getline(obj , info)){
-                                ++curr;
-                                if(curr == randNum){
-                                        obj.close();
-                                        return info;
-                                }
-                        }
-
-                        obj.close();
-                        return "";
-                
-                }
-
-                void separateData(string player){
+                void separate_player_data(string player){
                         string token;
-                        id = name = phno = email = password = data = "";
+                        id = player_name = phno = email = password = data = "";
                         int i=0;
                         while(player[i] != '\0'){
                                 token += player[i];
@@ -187,8 +189,8 @@ class Tree{
                                                 if(id == "\0"){
                                                         id = token;
                                                 }
-                                                else if(name == "\0"){
-                                                        name = token;
+                                                else if(player_name == "\0"){
+                                                        player_name = token;
                                                 }
                                                 else if(phno == "\0"){
                                                         phno = token;
@@ -210,10 +212,50 @@ class Tree{
                          }
                 }
 
+                void separate_game_data(string games){
+                        Game_Id = "";
+                        game_name = "";
+                        developer = "";
+                        publisher = "";
+                        file_size_in_GBs = "";
+                        downloads = "";
+                        string token = "";
+
+                        int i=0;
+
+                        while(games[i] != '\0'){
+                                token += games[i];
+                                if(games[i+1] == ','){
+                                                if(Game_Id == "\0"){
+                                                        Game_Id = token;
+                                                }
+                                                else if(game_name == "\0"){
+                                                        game_name = token;
+                                                }
+                                                else if(developer == "\0"){
+                                                        developer = token;
+                                                }
+                                                else if(publisher == "\0"){
+                                                        publisher = token;
+                                                }
+                                                else if(file_size_in_GBs == "\0"){
+                                                        file_size_in_GBs = token;
+                                                }
+                                
+                                        ++i; //incrementing to skip ','
+                                        token = ""; //Emptying the string after insertion
+                                }
+                                
+                                        ++i;
+                        }
+                        downloads= token;
+                        
+                }
+
 
                 Player* insert(Player*root , long long id){
                         if(root == nullptr){
-                                return new Player(to_string(id),name,phno,email,password,data);
+                                return new Player(to_string(id),player_name,phno,email,password,data);
                         }
                         if(id < stoll(root->Player_ID)){
                                root->left =  insert(root->left,id);
@@ -230,11 +272,49 @@ class Tree{
                         return root;
                 }
 
-                void insertPlayer(){
-                        string player = getInfo();
-                        separateData(player);
-                        //cout << name << "\n" << data << endl << endl;
-                        playerRoot = insert(playerRoot,stoll(id));         
+                Games* insert_Game(Games *root , int id ){
+                        if(root == nullptr){
+                                //cout << Game_Id <<"\t"<< game_name <<"\t"<< developer <<"\t "<<publisher <<"\t"<< file_size_in_GBs <<"\t"<< downloads <<endl;
+                                return new Games (Game_Id , game_name , developer , publisher , stod(file_size_in_GBs) , stol(downloads));
+                        }
+                        if(id < stol(root->Game_Id)){
+                                root->left = insert_Game(root->left , id);
+                        }
+                        if(id > stol(root->Game_Id)){
+                                root->right = insert_Game(root->right , id);
+                        }
+
+                        return root;
+
+                }
+
+                void make_Game_tree(){
+                        string info;
+                        fstream obj("Games.txt");
+                        while (getline(obj, info)) {
+                                separate_game_data(info);
+                                gamesRoot = insert_Game(gamesRoot , stol(Game_Id));
+        
+                                }
+
+                       obj.close();
+
+                }
+
+                void make_Player_tree(){
+                        string info;
+                        fstream  obj("Players.txt");
+                        while(getline(obj , info)){
+                                int randNum = rand() % 1001;
+                                if (randNum <= 130){
+                                        continue;
+                                }
+                                separate_player_data(info);
+                                playerRoot = insert(playerRoot, stoll(id));
+                        }
+
+                        obj.close();
+                           
                 }
 
                 Player* search(Player*root , long long id){
@@ -308,17 +388,30 @@ class Tree{
                        playerRoot = deleteNode(playerRoot,stoll(id));
                 }
                 
-                void display(Player *root){
+                void display_player(Player *root){
                         if(root == nullptr){
                                 return;
                         }
                         root->info();
-                        display(root->left);
-                        display(root->right);
+                        display_player(root->left);
+                        display_player(root->right);
                 }
 
                 void Display(){
-                        display(playerRoot);
+                        display_player(playerRoot);
+                }
+
+                void game_display(Games *root){
+                        if(root == nullptr){
+                                return;
+                        }
+                        root->info();
+                        game_display(root->left);
+                        game_display(root->right);
+                }
+
+                void GameDisplay(){
+                        game_display(gamesRoot);
                 }
 
 };
@@ -326,10 +419,12 @@ class Tree{
 int main(){
         srand(232503);
         Tree obj;
-        obj.insertPlayer();
+      //  obj.insertPlayer();
+        cout << "\n\n\nNew players:\n";
+       //   obj.insertPlayer();
      //   obj.insertPlayer();
        //] obj.insertPlayer();
-       obj.Display();
-        
+      // obj.Display();
+       obj.GameDisplay();
         return 0;
 }
