@@ -1,8 +1,61 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <ctime>
 using namespace std;
+
+class Queue_Node{
+        public:
+                string id;
+                int layer_no;
+                Queue_Node *next;
+                Queue_Node(string id , int layer_no){
+                        this->id = id;
+                        this->layer_no = layer_no;
+                        next = nullptr;
+                }
+
+};
+
+class Queue{
+        private:
+                Queue_Node* top;
+                Queue_Node* rear;
+        public:
+                Queue(){
+                        top = rear = nullptr;
+                }
+
+                bool isEmpty(){
+                        if(top == nullptr){
+                                return true;
+                        }
+                }
+
+                void Enqueue(string id , int layer_no){
+                        Queue_Node* newNode = new Queue_Node (id , layer_no);
+                        if(top == nullptr){
+                                top = rear = newNode;
+                                return;
+                        }
+
+                        rear->next = newNode;
+                        rear = newNode;
+
+                }
+
+                Queue_Node* Dequeue(){
+                        if(isEmpty()){
+                                return nullptr;
+                        }
+
+                        Queue_Node* temp = top;
+                        top = top->next;
+                        return temp;
+
+                }
+
+};
+
 
 class Games_PLayed_Class{
          public:
@@ -19,6 +72,8 @@ class Games_PLayed_Class{
                         achievements_Unlocked = achievements;
                         left = right = nullptr;
                 }
+
+                //inserts game into the tree
 
                 Games_PLayed_Class* insertGame(Games_PLayed_Class* root , long long Id , double h , long long a  ){
                         if(root == nullptr){
@@ -42,6 +97,7 @@ class Games_PLayed_Class{
                         root = insertGame(root,stoll(Id),hours,achievements);
                 }
 
+                //displays details
                 void info(){
                         cout << "Game_Id: "<<Game_Id << "\tHours Played: " << hoursPlayed << "\tAchievements Unloacked: " << achievements_Unlocked << endl;
                 }
@@ -114,10 +170,13 @@ class Player{
                 }
 
                 void info(){
-                        cout <<name <<endl<<Player_ID<<endl<<phoneNo<<endl<<Email<<endl<<Password<<endl<<games_played;
-                       // GamesPlayed->Display();
-                        cout<<endl<<endl;
+                        cout <<name <<"\t"<<Player_ID<<"\t"<<phoneNo<<"\t"<<Email<<"\t"<<Password<<"\t"<<games_played;
+                        cout << "\nGames Played:\n";
+                        GamesPlayed->Display();
+                        cout<<endl;
                 }
+
+                //separates string into variables and stores int the tree
 
                 void separateGameInfo(){
                         string Id;
@@ -151,6 +210,7 @@ class Player{
                                         ++i;
                         }
                 }
+
 
                 Games_PLayed_Class* search(Games_PLayed_Class *root , long long id){
                         if(root == nullptr){ //if reaches leaf nodes then it means the node was not present 
@@ -191,6 +251,7 @@ class Tree{
         private:
                 Player* playerRoot;
                 Games * gamesRoot;
+                Queue* q;
                 //Variables to store information about the player
                 string player_name ;
                 string id;
@@ -205,6 +266,11 @@ class Tree{
                 string publisher;
                 string file_size_in_GBs;
                 string downloads;
+                //Variables for random func
+                unsigned int seed = 232503; 
+                const unsigned int n1 = 1664525;  
+                const unsigned int n2 = 1013904223; 
+                const unsigned int n3 = 4294967295; 
 
         public:
                 Tree(){
@@ -216,6 +282,7 @@ class Tree{
  
                 //Players Tree insertion:
 
+                 //separates string into variables and stores int the tree
 
                 void separate_player_data(string player){
                         string token;
@@ -251,7 +318,7 @@ class Tree{
                 }
 
 
-
+                //inserts players into the tree
                 Player* insert(Player*root , long long id){
                         if(root == nullptr){
                                 return new Player(to_string(id),player_name,phno,email,password,data);
@@ -271,23 +338,30 @@ class Tree{
                         return root;
                 }
 
+                unsigned int getRand(){
+                        seed = (n1 * seed + n2) % n3; 
+                        return seed; 
+                }
+
+                //makes the intial player tree
 
                 void make_Player_tree(){
                         string info;
                         fstream  obj("Players.txt");
                         while(getline(obj , info)){
-                                int randNum = rand() % 1001;
+                                int randNum = getRand() % 1001;
                                 if (randNum <= 130){
                                         continue;
                                 }
                                 separate_player_data(info);
                                 playerRoot = insert(playerRoot, stoll(id));
                         }
-
+                        cout << "\nPlayer Tree Created!\n";
                         obj.close();
                            
                 }
 
+                //Functions to serach for player
                 Player* search(Player*root , long long id){
                         if(root == nullptr){ //if reaches leaf nodes then it means the node was not present 
                                 return nullptr;}
@@ -305,15 +379,17 @@ class Tree{
 
                 }
 
-                void searchPLayer(string id){
+                void searchPlayer(string id){
                        Player* p = search(playerRoot,stoll(id));
                        if(p == nullptr){
                                 cout<<"\nNo player with id: "<<id<<" in the tree.";
                                 return;
                        }
+                       cout << endl;
                        p->info();
                 }
 
+                //Functions to delete a player
                 Player* findMax(Player *root){
                         while(root->right != nullptr){
                                 root = root->right; //searching for max in left sub tree
@@ -355,12 +431,13 @@ class Tree{
                 return root;
                 }
 
-                Player* top_player(Player *root ,Player *topPlayer , int prevMax){
+                //fucntions to find top N players 
+                Player* top_player(Player *root ,Player *topPlayer , int prevMax){ 
                         if(root == nullptr){
                                 return topPlayer;
                         }
 
-                        if(root->games_played >= topPlayer->games_played && root->games_played < prevMax ){
+                        if(root->games_played >= topPlayer->games_played && root->games_played < prevMax ){ //to print in descending order
                                 topPlayer = root;
                         }
                         
@@ -395,27 +472,48 @@ class Tree{
                                 displayTop(playerRoot , maxValue);
                                 --n;
                         }
-                        prevMax = 1000000;
+                        prevMax = 1000000; //resetting
                 }
 
                 void deletePlayer(string id){
-                       playerRoot = deleteNode(playerRoot,stoll(id));
-                }
-                
-                void display_player(Player *root){
-                        if(root == nullptr){
+                        Player *p = search(playerRoot , stoll(id));
+                        if(p == nullptr){
+                                cout <<"\nNo player with this id.\n";
                                 return;
                         }
+                       playerRoot = deleteNode(playerRoot,stoll(id));
+                       cout << "Deleted!";
+                }
+
+                //Fucntions to display path for a player
+                void display_player(Player *root , string id , int* found ){
+                        if(*found == 1){
+                                return;
+                        }
+                        if (root == nullptr) {
+                                return; 
+                        }
                         root->info();
-                        display_player(root->left);
-                        display_player(root->right);
+                        if(root->Player_ID == id){
+                                *found = 1;
+                                return;
+                        }
+                        display_player(root->left , id , found);
+                        display_player(root->right , id , found);
                 }
 
 
-                void Player_Display(){
-                        display_player(playerRoot);
+                void Player_Display(string id){
+                        Player *p = search(playerRoot , stoll(id));
+                        if(p == nullptr){
+                                cout <<"\nNo player with this id.\n";
+                                return;
+                        }
+                        int found = 0;
+                        display_player(playerRoot, id , &found);
                 }
-
+             
+                //Funcitons to check if a player has played a game
                 void has_played(long long player_id , long long game_id){
                         Player* p = search(playerRoot,player_id);
                         if(p == nullptr){
@@ -425,14 +523,7 @@ class Tree{
                         p-> search_game(game_id);
                 }
 
-                void save_game_data(Games_PLayed_Class* root, fstream &obj) {
-                        if (root == nullptr) {
-                                return;
-                        }
-                        obj << root->Game_Id << "," << root->hoursPlayed << "," << root->achievements_Unlocked << "," ;
-                        save_game_data(root->left, obj);
-                        save_game_data(root->right, obj);
-                        }
+                //Saves player data into a csv file
                 
                 void save_player_data(Player* root , fstream &obj){
                         if(root == nullptr){
@@ -448,6 +539,15 @@ class Tree{
                         save_player_data(root->right, obj);
 
                 }
+                //Saves games_played data into  a csv file
+                void save_game_data(Games_PLayed_Class* root, fstream &obj) {
+                        if (root == nullptr) {
+                                return;
+                        }
+                        obj << root->Game_Id << "," << root->hoursPlayed << "," << root->achievements_Unlocked << "," ;
+                        save_game_data(root->left, obj);
+                        save_game_data(root->right, obj);
+                        }
 
                 void savePlayerData(){
                         fstream obj;
@@ -456,6 +556,110 @@ class Tree{
                         save_player_data(playerRoot , obj);
                         obj.close();
                         cout << "Player data has been saved successfully to Saved_Players.csv.\n";
+                }
+
+                //Function to edit a players entry
+                void edit_player_entry(string id) {
+                        int choice;
+                        string newEntry = "";
+
+                        Player* p = search(playerRoot, stoll(id)); 
+
+                        if (p == nullptr) {
+                        cout << "Player with ID " << id << " not found." << endl;
+                        return;
+                        }
+
+                        cout << "Editing Player Entry for Player ID: " << id << endl;
+                        cout << "1. Edit Player Name" << endl;
+                        cout << "2. Edit Player Phone Number" << endl;
+                        cout << "3. Edit Player Email" << endl;
+                        cout << "4. Edit Player Password" << endl;
+                        cout << "5. Edit Player ID" << endl;
+                        cout << "6. Exit" << endl;
+
+                        cout << "Enter your choice (1-6): ";
+                        cin >> choice;
+
+                        switch (choice) {
+                                case 1:
+                                        cout << "Enter new player name: ";
+                                        cin.ignore();  // To clear the input buffer
+                                        getline(cin, newEntry);
+                                        p->name = newEntry;
+                                break;
+
+                                case 2:
+                                        cout << "Enter new player phone number: ";
+                                        cin.ignore();  // To clear the input buffer
+                                        getline(cin, newEntry);
+                                        p->phoneNo = newEntry;
+                                break;
+
+                                case 3:
+                                        cout << "Enter new player email: ";
+                                        cin.ignore();  // To clear the input buffer
+                                        getline(cin, newEntry);
+                                        p->Email = newEntry;
+                                break;
+
+                                case 4:
+                                        cout << "Enter new player password: ";
+                                        cin.ignore();  // To clear the input buffer
+                                        getline(cin, newEntry);
+                                        p->Password = newEntry;
+                                break;
+
+                                case 5:
+                                        //for id deletes the node and re-inserts it
+                                        cout << "Enter new Player ID: ";
+                                        cin >> newEntry;
+                                        p->Player_ID= newEntry;
+                                        playerRoot = deleteNode(playerRoot, stoll(id));
+                                        playerRoot = insert(playerRoot, stoll(p->Player_ID));  
+                                break;
+
+                                case 6:
+                                         cout << "Exiting edit menu." << endl;
+                                break;
+
+                                default:
+                                         cout << "Invalid choice. Please select a number between 1 and 6." << endl;
+                                break;
+                        }
+                        cout << "\nAfter changes:\n";
+                        p->info();  
+                }  
+
+                //function to insert a player
+                void insertPlayerData() {
+                        string id, name, phoneNo, email, password;
+
+                        cout << "Enter ID: ";
+                        cin >> id;
+                        cin.ignore();
+
+                        if(!(search(playerRoot,stoll(id))== nullptr)){
+                                cout << "\nPlayer with this id is already present.";
+                                return;
+                        }
+
+                        cout << "Enter Name: ";
+                        getline(cin, name);
+
+                        cout << "Enter Phone Number: ";
+                        getline(cin, phoneNo);
+
+                        cout << "Enter Email: ";
+                        getline(cin, email);
+
+                        cout << "Enter Password: ";
+                        getline(cin, password);
+
+                        Player* newPlayer = new Player(id, name, phoneNo, email, password, "");
+                        playerRoot = insert(playerRoot, stoll(id));
+                        cout << "Player inserted ." << endl;
+                        newPlayer->info(); 
                 }
 
 
@@ -502,6 +706,7 @@ class Tree{
                 }
 
 
+                //Inserts game into the tree
                 Games* insert_Game(Games *root , long long id ){
                         if(root == nullptr){
                              //   cout << Game_Id <<"\t"<< game_name <<"\t"<< developer <<"\t "<<publisher <<"\t"<< file_size_in_GBs <<"\t"<< downloads <<endl;
@@ -517,7 +722,7 @@ class Tree{
                         return root;
 
                 }
-
+                //Makes the initial game tree
                 void make_Game_tree(){
                         string info;
                         fstream obj("Games.txt");
@@ -525,11 +730,12 @@ class Tree{
                                 separate_game_data(info);
                                 gamesRoot = insert_Game(gamesRoot , stol(Game_Id));
                                 }
-
+                        cout << "\nGame tree created.\n";
                        obj.close();
 
                 }
 
+                //Functions to serach for a game
                 Games* searchG(Games*root , long long id){
                         if(root == nullptr){ //if reaches leaf nodes then it means the node was not present 
                                 cout << id << endl;
@@ -558,6 +764,7 @@ class Tree{
                        g->info();
                 }
 
+                //Fucntions to delete a game
                 Games* findMax(Games *root){
                         while(root->right != nullptr){
                                 root = root->right; //searching for max in left sub tree
@@ -600,9 +807,15 @@ class Tree{
                 }
 
                 void deleteGame(string id){
+                        Games* g = searchG(gamesRoot,stoll(id));
+                        if(g == nullptr){
+                                cout << "\nNo game with this id.\n";
+                                return;
+                        }
                         gamesRoot = delete_Games_Node(gamesRoot,stoll(id));
                 }
 
+                //fucntion to save data into csv
                 void save_game_data(Games* root, fstream &obj) {
                         if (root == nullptr) {
                                 return;
@@ -624,29 +837,147 @@ class Tree{
                                 cout << "Game data has been saved successfully to Saved_Games.csv.\n";
                 }
 
+                //fucntions to display path for a game
 
-                void game_display(Games *root){
-                        if(root == nullptr){
+                void game_display(Games *root ,  string id , int* found){
+                        if(*found == 1){
                                 return;
                         }
+                        if (root == nullptr) {
+                                return; 
+                        }
                         root->info();
-                        game_display(root->left);
-                        game_display(root->right);
+                        if(root->Game_Id== id){
+                                *found = 1;
+                                return;
+                        }
+                        game_display(root->left,id,found);
+                        game_display(root->right,id,found);
+                        
+                       return;
                 }
 
-                void GameDisplay(){
-                        game_display(gamesRoot);
+                void GameDisplay(string id){
+                        Games* g = searchG(gamesRoot,stoll(id));
+                        if(g == nullptr){
+                                cout << "\nNo game with this id.\n";
+                                return;
+                        }
+                        int found = 0;
+                        game_display(gamesRoot,id,&found);
+                      
                 }
+
+                //fucntion to edit a game entry
+                void edit_game_entry(string id) {
+                        int choice;
+                        string newEntry = "";
+                        Games *g = searchG(gamesRoot , stoll(id));
+                        
+                        cout << "Editing Game Entry for Game ID: " << id << endl;
+                        cout << "Please select the attribute you want to edit:" << endl;
+                        cout << "1. Edit Game Name" << endl;
+                        cout << "2. Edit Developer" << endl;
+                        cout << "3. Edit Publisher" << endl;
+                        cout << "4. Edit File Size (in GBs)" << endl;
+                        cout << "5. Edit Downloads" << endl;
+                        cout << "6. Edit Game Id" << endl;
+                        cout << "7. Exit" << endl;
+
+                        cout << "Enter your choice (1-6): ";
+                        cin >> choice;
+                        switch (choice) {
+                                case 1:
+                                        cout << "Enter new game name: " << endl;
+                                        cin >> newEntry;
+                                        g->name = newEntry;
+                                        break;
+                                case 2:
+                                        cout << "Enter new developer name: " << endl;
+                                        cin >> newEntry;
+                                        g->developer = newEntry;
+                                        break;
+                                case 3:
+                                        cout << "Enter new publisher name: " << endl;
+                                        cin >> newEntry;
+                                        g->publisher = newEntry;
+                                        break;
+                                case 4:
+                                        cout << "Enter new File Size: " << endl;
+                                        cin >> newEntry;
+                                        g->file_size_in_GBs = stod(newEntry);
+                                        break;
+                                case 5:
+                                        cout << "Enter new no. of downloads: " << endl;
+                                        cin >> newEntry;
+                                        g->downloads = stoll(newEntry);
+                                        break;
+                                case 6:
+
+                                        //incase of id deletes the node and re-inserts with the new id
+                                        cout << "Enter new game id: " << endl;
+                                        cin >> newEntry;
+                                        g->Game_Id = newEntry;
+                                        deleteGame(g->Game_Id);
+                                        gamesRoot = insert_Game(gamesRoot, stoll(g->Game_Id));  
+                                        cout << "Game ID updated to: " << g->Game_Id << endl;
+                                        break;
+
+                                case 7:
+                                        cout << "Exiting edit menu." << endl;
+                                        break;
+                                default:
+                                        cout << "Invalid choice. Please select a number between 1 and 6." << endl;
+                                        break;
+                        }
+                        cout << "\nAfter changes:\n";
+                        g->info();
+                }
+                
+                //function to insert a new game into the tree
+                void insertGameData() {
+                        string id, name, developer, publisher, fileSize, downloads;
+
+                        cout << "\nEnter Game ID: ";
+                        cin >> id;
+                        
+                        if (!(searchG(gamesRoot, stoll(id))== nullptr)){
+                                cout << "\nGame with this id is already present.\n";
+                                return;
+                        }
+
+                        cout << "Enter Name: ";
+                        getline(cin, name);
+
+                        cout << "Enter developer name: ";
+                        getline(cin, developer);
+
+                        cout << "Enter publisher name: ";
+                        getline(cin, publisher);
+
+                        cout << "Enter fileSize: ";
+                        getline(cin, fileSize);
+
+                        cout << "Enter downloads: ";
+                        getline(cin, downloads);
+
+                        Games* newGame = new Games(id, name, developer, publisher, stod(fileSize), stoll(downloads));
+                        gamesRoot = insert_Game(gamesRoot, stoll(id));
+                        cout << "Game inserted ." << endl;
+                        newGame->info();
+                       
+                      
+                }
+
+
 
 };
 int main() {
-        srand(232503);
         Tree obj;
         int choice;
         string id;
         int n;
-        obj.savePlayerData();
-        obj.saveGameData();
+       
         while (true) {
                 cout << "\nMenu:\n";
                 cout << "1. Insert Player\n";
@@ -657,70 +988,102 @@ int main() {
                 cout << "6. Search Game\n";
                 cout << "7. Find Top N Players\n";
                 cout << "8. Check if Player has Played a Game\n";
-                cout << "9. Exit\n";
+                cout << "9. Display path of a player\n";
+                cout << "10. Display path of a game\n";
+                cout << "11. Save game data in csv\n";
+                cout << "12. Save player data in csv \n";
+                cout << "13. Edit Player Entry\n";
+                cout << "14. Edit Game entry\n";
+                cout << "15. Exit\n";
+
                 cout << "Enter your choice: ";
                 cin >> choice;
 
                 switch (choice) {
-                case 1:
-                // Option for inserting a new player (this could be implemented if you want to add player input functionality)
-                // obj.insertPlayer();
-                break;
+                        case 1:
+                                obj.insertPlayerData();
+                        break;
 
-                case 2:
-                cout << "Enter player ID to delete: ";
-                cin >> id;
-                obj.deletePlayer(id);
-                break;
+                        case 2:
+                                cout << "Enter player ID to delete: ";
+                                cin >> id;
+                                obj.deletePlayer(id);
+                        break;
 
-                case 3:
-                cout << "Enter player ID to search: ";
-                cin >> id;
-                obj.searchPLayer(id);
-                break;
+                        case 3:
+                                cout << "Enter player ID to search: ";
+                                cin >> id;
+                                obj.searchPlayer(id);
+                        break;
 
-                case 4:
-                // Option for inserting a new game (this could be implemented if you want to add game input functionality)
-                // obj.insertGame();
-                break;
+                        case 4:
+                                obj.insertGameData();
+                        break;
 
-                case 5:
-                cout << "Enter game ID to delete: ";
-                cin >> id;
-                obj.deleteGame(id);
-                obj.GameDisplay();
-                break;
+                        case 5:
+                                cout << "Enter game ID to delete: ";
+                                cin >> id;
+                                obj.deleteGame(id);
+                        break;
 
-                case 6:
-                cout << "Enter game ID to search: ";
-                cin >> id;
-                obj.search_Game(id);
-                break;
+                        case 6:
+                                cout << "Enter game ID to search: ";
+                                cin >> id;
+                                obj.search_Game(id);
+                        break;
 
-                case 7:
-                // Find top N players
-                cout << "Enter the number of top players to find: ";
-                cin >> n;
-                obj.find_top_player(n);
-                break;
+                        case 7:
+                                cout << "Enter the number of top players to find: ";
+                                cin >> n;
+                                obj.find_top_player(n);
+                        break;
 
-                case 8:
-                // Check if a player has played a game
-                long long player_id, game_id;
-                cout << "Enter player ID: ";
-                cin >> player_id;
-                cout << "Enter game ID: ";
-                cin >> game_id;
-                obj.has_played(player_id, game_id);
-                break;
+                        case 8:
+                                long long player_id, game_id;
+                                cout << "Enter player ID: ";
+                                cin >> player_id;
+                                cout << "Enter game ID: ";
+                                cin >> game_id;
+                                obj.has_played(player_id, game_id);
+                        break;
 
-                case 9:
-                cout << "Exiting program." << endl;
-                return 0;
+                        case 9:
+                                cout << "\nEnter player id: ";
+                                cin >> id;
+                                obj.Player_Display(id);
+                        break;
+                        case 10:
+                                cout << "\nEnter game id: ";
+                                cin >> id;
+                                obj.GameDisplay(id);
+                        break;
+                        case 11:
+                                obj.savePlayerData();
+                        break;
+                        case 12:
+                                obj.saveGameData();
+                        break;
+                        case 13:
+                                cout << "\nEnter player id: ";
+                                cin >> id;
+                                obj.edit_player_entry(id);
 
-                default:
-                cout << "Invalid choice. Please try again." << endl;
-        }
+                        break;
+                        case 14:
+                                cout << "\nEnter game id: ";
+                                cin >> id;
+                                obj.edit_game_entry(id);
+
+                        break;
+                        case 15:
+                                cout << "Exiting.";
+                                return 0;
+                        break;
+                        default:
+                        cout << "Invalid choice. Please try again." << endl;
+                }
         }
 return 0;
 }
+
+    
