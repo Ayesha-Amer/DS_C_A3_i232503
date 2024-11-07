@@ -21,7 +21,7 @@ class Games_PLayed_Class{
                 }
 
                 Games_PLayed_Class* insertGame(Games_PLayed_Class* root , long long Id , double h , long long a  ){
-                         if(root == nullptr){
+                        if(root == nullptr){
                                 return new Games_PLayed_Class(to_string(Id),h,a);
                         }
                         if(Id < stoll(root->Game_Id)){
@@ -58,6 +58,7 @@ class Games_PLayed_Class{
                 void Display(){
                         display(root);
                 }
+
 
 };
 
@@ -98,6 +99,7 @@ class Player{
                 Player *left;
                 Player *right;
                 string games;
+                int games_played = 0;
                 Games_PLayed_Class *GamesPlayed = new Games_PLayed_Class("", 0.0f, 0);
                
                 Player(string playerID, string playerName, string phone, string email,string password,string games) {
@@ -112,8 +114,8 @@ class Player{
                 }
 
                 void info(){
-                        cout <<name <<endl<<Player_ID<<endl<<phoneNo<<endl<<Email<<endl<<Password<<"\nGames Played: \n";
-                        GamesPlayed->Display();
+                        cout <<name <<endl<<Player_ID<<endl<<phoneNo<<endl<<Email<<endl<<Password<<endl<<games_played;
+                       // GamesPlayed->Display();
                         cout<<endl<<endl;
                 }
 
@@ -137,6 +139,7 @@ class Player{
 
                                                         //Makes the node when the 3 values are filled
                                                         GamesPlayed->insert(Id,stod(hours),stoll(achievements));
+                                                        ++games_played;
                                                         Id = hours = achievements = "";
                                                 }
                                                
@@ -147,6 +150,38 @@ class Player{
                                 
                                         ++i;
                         }
+                }
+
+                Games_PLayed_Class* search(Games_PLayed_Class *root , long long id){
+                        if(root == nullptr){ //if reaches leaf nodes then it means the node was not present 
+                                return nullptr;}
+        
+                        cout << root->Game_Id << endl;
+
+                        if(id == stoll(root->Game_Id)){
+                                return root;
+                        }
+
+                        if(id < stoll(root->Game_Id)){
+                                return  search(root->left,id);
+                        }
+                        else
+                                return  search(root->right,id);
+
+
+                }
+
+                void search_game(long long id){
+                        cout << id << endl;
+                     
+                        Games_PLayed_Class *game = search(GamesPlayed->root,id);
+                        
+                         if(game == nullptr){
+                                cout << "\nNo the player has not played this game";
+                                return ;
+                       }
+                                cout << "\nYes the player has played this game: \n";
+                                game->info();
                 }
 
 };
@@ -179,6 +214,9 @@ class Tree{
                         make_Game_tree();
                 }
  
+                //Players Tree insertion:
+
+
                 void separate_player_data(string player){
                         string token;
                         id = player_name = phno = email = password = data = "";
@@ -212,45 +250,6 @@ class Tree{
                          }
                 }
 
-                void separate_game_data(string games){
-                        Game_Id = "";
-                        game_name = "";
-                        developer = "";
-                        publisher = "";
-                        file_size_in_GBs = "";
-                        downloads = "";
-                        string token = "";
-
-                        int i=0;
-
-                        while(games[i] != '\0'){
-                                token += games[i];
-                                if(games[i+1] == ','){
-                                                if(Game_Id == "\0"){
-                                                        Game_Id = token;
-                                                }
-                                                else if(game_name == "\0"){
-                                                        game_name = token;
-                                                }
-                                                else if(developer == "\0"){
-                                                        developer = token;
-                                                }
-                                                else if(publisher == "\0"){
-                                                        publisher = token;
-                                                }
-                                                else if(file_size_in_GBs == "\0"){
-                                                        file_size_in_GBs = token;
-                                                }
-                                
-                                        ++i; //incrementing to skip ','
-                                        token = ""; //Emptying the string after insertion
-                                }
-                                
-                                        ++i;
-                        }
-                        downloads= token;
-                        
-                }
 
 
                 Player* insert(Player*root , long long id){
@@ -272,34 +271,6 @@ class Tree{
                         return root;
                 }
 
-                Games* insert_Game(Games *root , int id ){
-                        if(root == nullptr){
-                                //cout << Game_Id <<"\t"<< game_name <<"\t"<< developer <<"\t "<<publisher <<"\t"<< file_size_in_GBs <<"\t"<< downloads <<endl;
-                                return new Games (Game_Id , game_name , developer , publisher , stod(file_size_in_GBs) , stol(downloads));
-                        }
-                        if(id < stol(root->Game_Id)){
-                                root->left = insert_Game(root->left , id);
-                        }
-                        if(id > stol(root->Game_Id)){
-                                root->right = insert_Game(root->right , id);
-                        }
-
-                        return root;
-
-                }
-
-                void make_Game_tree(){
-                        string info;
-                        fstream obj("Games.txt");
-                        while (getline(obj, info)) {
-                                separate_game_data(info);
-                                gamesRoot = insert_Game(gamesRoot , stol(Game_Id));
-        
-                                }
-
-                       obj.close();
-
-                }
 
                 void make_Player_tree(){
                         string info;
@@ -384,6 +355,49 @@ class Tree{
                 return root;
                 }
 
+                Player* top_player(Player *root ,Player *topPlayer , int prevMax){
+                        if(root == nullptr){
+                                return topPlayer;
+                        }
+
+                        if(root->games_played >= topPlayer->games_played && root->games_played < prevMax ){
+                                topPlayer = root;
+                        }
+                        
+                        topPlayer = top_player(root->left , topPlayer , prevMax);
+                        topPlayer = top_player(root->right , topPlayer , prevMax);
+
+                        return topPlayer;
+
+                }
+
+                void displayTop(Player *root , int max){
+                        if(root == nullptr){
+                                return;
+                        }
+                        if(root->games_played == max){
+                        root->info();
+                        }
+                        displayTop(root->left , max);
+                        displayTop(root->right , max);
+
+                }
+
+
+                void find_top_player(int n){
+                        int prevMax = 1000000;
+                        while(n != 0){
+                                Player* top = top_player(playerRoot , playerRoot , prevMax);
+                                int maxValue = top->games_played;
+                                prevMax = maxValue;
+                               // cout << maxValue << endl;
+                                cout << "\nTop Player "<<n<<" : \n";
+                                displayTop(playerRoot , maxValue);
+                                --n;
+                        }
+                        prevMax = 1000000;
+                }
+
                 void deletePlayer(string id){
                        playerRoot = deleteNode(playerRoot,stoll(id));
                 }
@@ -397,9 +411,219 @@ class Tree{
                         display_player(root->right);
                 }
 
-                void Display(){
+
+                void Player_Display(){
                         display_player(playerRoot);
                 }
+
+                void has_played(long long player_id , long long game_id){
+                        Player* p = search(playerRoot,player_id);
+                        if(p == nullptr){
+                                cout<<"\nNo player with id: "<<id<<" in the tree.";
+                                return;
+                        }
+                        p-> search_game(game_id);
+                }
+
+                void save_game_data(Games_PLayed_Class* root, fstream &obj) {
+                        if (root == nullptr) {
+                                return;
+                        }
+                        obj << root->Game_Id << "," << root->hoursPlayed << "," << root->achievements_Unlocked << "," ;
+                        save_game_data(root->left, obj);
+                        save_game_data(root->right, obj);
+                        }
+                
+                void save_player_data(Player* root , fstream &obj){
+                        if(root == nullptr){
+                                return;
+                        }
+                        obj << root->Player_ID << "," << root->name << "," << root->phoneNo << ","
+                        << root->Email << "," << root->Password << "," << root->games_played << ",";
+                        Games_PLayed_Class* gameRoot = root->GamesPlayed->root;
+                        save_game_data(gameRoot, obj);
+                        obj << "\n";
+
+                        save_player_data(root->left, obj);
+                        save_player_data(root->right, obj);
+
+                }
+
+                void savePlayerData(){
+                        fstream obj;
+                        obj.open("Saved_Players.csv" , ios::out);
+                        obj << "Player_ID,Name,Phone,Email,Password,Games_Played\n";
+                        save_player_data(playerRoot , obj);
+                        obj.close();
+                        cout << "Player data has been saved successfully to Saved_Players.csv.\n";
+                }
+
+
+                //Games Tree implementation:
+
+                   void separate_game_data(string games){
+                        Game_Id = "";
+                        game_name = "";
+                        developer = "";
+                        publisher = "";
+                        file_size_in_GBs = "";
+                        downloads = "";
+                        string token = "";
+
+                        int i=0;
+
+                        while(games[i] != '\0'){
+                                token += games[i];
+                                if(games[i+1] == ','){
+                                                if(Game_Id == "\0"){
+                                                        Game_Id = token;
+                                                }
+                                                else if(game_name == "\0"){
+                                                        game_name = token;
+                                                }
+                                                else if(developer == "\0"){
+                                                        developer = token;
+                                                }
+                                                else if(publisher == "\0"){
+                                                        publisher = token;
+                                                }
+                                                else if(file_size_in_GBs == "\0"){
+                                                        file_size_in_GBs = token;
+                                                }
+                                
+                                        ++i; //incrementing to skip ','
+                                        token = ""; //Emptying the string after insertion
+                                }
+                                
+                                        ++i;
+                        }
+                        downloads= token;
+                        
+                }
+
+
+                Games* insert_Game(Games *root , long long id ){
+                        if(root == nullptr){
+                             //   cout << Game_Id <<"\t"<< game_name <<"\t"<< developer <<"\t "<<publisher <<"\t"<< file_size_in_GBs <<"\t"<< downloads <<endl;
+                                return new Games (Game_Id , game_name , developer , publisher , stod(file_size_in_GBs) , stol(downloads));
+                        }
+                        if(id < stol(root->Game_Id)){
+                                root->left = insert_Game(root->left , id);
+                        }
+                        if(id > stol(root->Game_Id)){
+                                root->right = insert_Game(root->right , id);
+                        }
+
+                        return root;
+
+                }
+
+                void make_Game_tree(){
+                        string info;
+                        fstream obj("Games.txt");
+                        while (getline(obj, info)) {
+                                separate_game_data(info);
+                                gamesRoot = insert_Game(gamesRoot , stol(Game_Id));
+                                }
+
+                       obj.close();
+
+                }
+
+                Games* searchG(Games*root , long long id){
+                        if(root == nullptr){ //if reaches leaf nodes then it means the node was not present 
+                                cout << id << endl;
+                                return nullptr;}
+        
+
+                        if(id == stoll(root->Game_Id)){
+                                cout << id << endl;
+                                return root;
+                        }
+
+                        if(id < stoll(root->Game_Id)){
+                                return  searchG(root->left,id);
+                        }
+                        else
+                                 return  searchG(root->right,id);
+
+                }
+
+                void search_Game(string id){
+                       Games* g = searchG(gamesRoot,stoll(id));
+                       if(g == nullptr){
+                                cout<<"\nNo Game with id: "<<id<<" in the tree.";
+                                return;
+                       }
+                       g->info();
+                }
+
+                Games* findMax(Games *root){
+                        while(root->right != nullptr){
+                                root = root->right; //searching for max in left sub tree
+                        }
+                        return root;
+                }
+
+                Games* delete_Games_Node(Games*root , long long id){
+                        if(root == nullptr){ //if reaches leaf nodes
+                                return root; 
+                        }
+
+                        //Searching the node in left and right trees.
+                        if(id < stoll(root->Game_Id)){
+                                root->left = delete_Games_Node(root->left,id);
+                        }
+
+                        else if(id > stoll(root->Game_Id)){
+                                root->right = delete_Games_Node(root->right,id);
+                        }
+
+                        else{
+                                if(root->left == nullptr){      //If there is no left child it will take value of right child
+                                        Games *temp = root->right;
+                                        delete root; //Delete the root and take valur of right child
+                                        return temp;
+                                }
+                                if(root->right == nullptr){      //If there is no right child it will take value of left child
+                                        Games *temp = root->left;
+                                        delete root; //Delete the root and take value of left child
+                                        return temp;
+                                }
+
+                        //If the node has 2 child then consider the predecessor deletion which is replacing it by the max id in the left tree:
+                        Games* temp = findMax(root->left);
+                        root->Game_Id = temp->Game_Id;
+                        root->left = delete_Games_Node(root->left,stoll(temp->Game_Id)); //Callling the func again to delete the left node properly 
+                        }
+                return root;
+                }
+
+                void deleteGame(string id){
+                        gamesRoot = delete_Games_Node(gamesRoot,stoll(id));
+                }
+
+                void save_game_data(Games* root, fstream &obj) {
+                        if (root == nullptr) {
+                                return;
+                        }
+
+                        obj << root->Game_Id << "," << root->name << "," << root->developer << ","
+                                << root->publisher << "," << root->file_size_in_GBs << "," << root->downloads << "\n";
+
+                        save_game_data(root->left, obj);
+                        save_game_data(root->right, obj);
+}
+
+                void saveGameData() {
+                        fstream obj;
+                                obj.open("Saved_Games.csv", ios::out);
+                                obj << "Game_ID,Name,Developer,Publisher,File_Size_GBs,Downloads\n";
+                                save_game_data(gamesRoot, obj);
+                                obj.close();
+                                cout << "Game data has been saved successfully to Saved_Games.csv.\n";
+                }
+
 
                 void game_display(Games *root){
                         if(root == nullptr){
@@ -415,16 +639,88 @@ class Tree{
                 }
 
 };
-
-int main(){
+int main() {
         srand(232503);
         Tree obj;
-      //  obj.insertPlayer();
-        cout << "\n\n\nNew players:\n";
-       //   obj.insertPlayer();
-     //   obj.insertPlayer();
-       //] obj.insertPlayer();
-      // obj.Display();
-       obj.GameDisplay();
-        return 0;
+        int choice;
+        string id;
+        int n;
+        obj.savePlayerData();
+        obj.saveGameData();
+        while (true) {
+                cout << "\nMenu:\n";
+                cout << "1. Insert Player\n";
+                cout << "2. Delete Player\n";
+                cout << "3. Search Player\n";
+                cout << "4. Insert Game\n";
+                cout << "5. Delete Game\n";
+                cout << "6. Search Game\n";
+                cout << "7. Find Top N Players\n";
+                cout << "8. Check if Player has Played a Game\n";
+                cout << "9. Exit\n";
+                cout << "Enter your choice: ";
+                cin >> choice;
+
+                switch (choice) {
+                case 1:
+                // Option for inserting a new player (this could be implemented if you want to add player input functionality)
+                // obj.insertPlayer();
+                break;
+
+                case 2:
+                cout << "Enter player ID to delete: ";
+                cin >> id;
+                obj.deletePlayer(id);
+                break;
+
+                case 3:
+                cout << "Enter player ID to search: ";
+                cin >> id;
+                obj.searchPLayer(id);
+                break;
+
+                case 4:
+                // Option for inserting a new game (this could be implemented if you want to add game input functionality)
+                // obj.insertGame();
+                break;
+
+                case 5:
+                cout << "Enter game ID to delete: ";
+                cin >> id;
+                obj.deleteGame(id);
+                obj.GameDisplay();
+                break;
+
+                case 6:
+                cout << "Enter game ID to search: ";
+                cin >> id;
+                obj.search_Game(id);
+                break;
+
+                case 7:
+                // Find top N players
+                cout << "Enter the number of top players to find: ";
+                cin >> n;
+                obj.find_top_player(n);
+                break;
+
+                case 8:
+                // Check if a player has played a game
+                long long player_id, game_id;
+                cout << "Enter player ID: ";
+                cin >> player_id;
+                cout << "Enter game ID: ";
+                cin >> game_id;
+                obj.has_played(player_id, game_id);
+                break;
+
+                case 9:
+                cout << "Exiting program." << endl;
+                return 0;
+
+                default:
+                cout << "Invalid choice. Please try again." << endl;
+        }
+        }
+return 0;
 }
